@@ -119,7 +119,7 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
           addLog(message === 'STOP' ? 'Variasi stopped' : `${message} Activated`);
           break;
         case 'smarthome/status':
-          // Assuming payload is JSON for status
+          // Assuming payload is JSON for status, but fallback to simple string
           try {
             const parsedStatus = JSON.parse(message);
             setState((prev) => ({
@@ -128,7 +128,13 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }));
             addLog('Status device diperbarui');
           } catch (e) {
-            console.error('Invalid status payload');
+            const upperMsg = message.toUpperCase();
+            if (upperMsg === 'ONLINE' || upperMsg === 'CONNECTED') {
+              setState((prev) => ({ ...prev, status: { ...prev.status, esp32Online: true } }));
+            } else if (upperMsg === 'OFFLINE' || upperMsg === 'DISCONNECTED') {
+              setState((prev) => ({ ...prev, status: { ...prev.status, esp32Online: false } }));
+            }
+            // we ignore other malformed payloads gracefully instead of erroring out
           }
           break;
         default:

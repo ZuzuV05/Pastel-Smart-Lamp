@@ -5,6 +5,7 @@ import { RelayCard } from './RelayCard';
 import { VariationControl } from './VariationControl';
 import { StatusCard } from './StatusCard';
 import { NotificationPanel } from './NotificationPanel';
+import { GlobalRelayControl } from './GlobalRelayControl';
 
 export const Dashboard: React.FC = () => {
   return (
@@ -17,11 +18,14 @@ export const Dashboard: React.FC = () => {
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
           <SensorCard />
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <RelayCard id="lampu1" title="Lampu 1" />
-            <RelayCard id="lampu2" title="Lampu 2" />
-            <RelayCard id="lampu3" title="Lampu 3" />
-            <RelayCard id="lampu4" title="Lampu 4" />
+          <div className="flex flex-col gap-2">
+            <GlobalRelayControl />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <RelayCard id="lampu1" title="Lampu 1" />
+              <RelayCard id="lampu2" title="Lampu 2" />
+              <RelayCard id="lampu3" title="Lampu 3" />
+              <RelayCard id="lampu4" title="Lampu 4" />
+            </div>
           </div>
 
           <VariationControl />
