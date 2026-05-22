@@ -150,9 +150,41 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const publish = (topic: string, message: string) => {
     if (client && client.connected) {
       client.publish(topic, message);
-      // We also update state optimistically or rely on the loopback from broker
+      
+      // Optimistic update so the UI reacts instantly
+      if (topic.startsWith('smarthome/lampu')) {
+        const lampKey = topic.split('/')[1] as keyof AppState['relays'];
+        setState((prev) => ({
+          ...prev,
+          relays: { ...prev.relays, [lampKey]: message as RelayStatus },
+          lastUpdate: new Date(),
+        }));
+        addLog(`Command sent: ${lampKey} -> ${message}`);
+      } else if (topic === 'smarthome/variasi') {
+        setState((prev) => ({
+          ...prev,
+          variation: message as any,
+          lastUpdate: new Date(),
+        }));
+        addLog(`Command sent: Variation -> ${message}`);
+      }
     } else {
-      addLog('Failed to publish: MQTT not connected');
+      addLog('Failed to publish: MQTT not connected. UI updated locally for testing.');
+      // Local fallback for testing without MQTT
+      if (topic.startsWith('smarthome/lampu')) {
+        const lampKey = topic.split('/')[1] as keyof AppState['relays'];
+        setState((prev) => ({
+          ...prev,
+          relays: { ...prev.relays, [lampKey]: message as RelayStatus },
+          lastUpdate: new Date(),
+        }));
+      } else if (topic === 'smarthome/variasi') {
+        setState((prev) => ({
+          ...prev,
+          variation: message as any,
+          lastUpdate: new Date(),
+        }));
+      }
     }
   };
 
