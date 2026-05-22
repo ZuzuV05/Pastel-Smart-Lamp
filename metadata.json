@@ -1,0 +1,6 @@
+{
+  "name": "Smart Home IoT Dashboard",
+  "description": "Feminine futuristic IoT dashboard with realtime MQTT integration",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
