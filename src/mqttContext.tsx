@@ -9,12 +9,12 @@ interface MqttContextType {
 }
 
 const defaultState: AppState = {
-  temperature: 29,
+  temperature: 29.0,
   humidity: 75,
   relays: {
-    lampu1: 'ON',
+    lampu1: 'OFF',
     lampu2: 'OFF',
-    lampu3: 'ON',
+    lampu3: 'OFF',
     lampu4: 'OFF',
   },
   variation: 'STOP',
@@ -92,49 +92,74 @@ export const MqttProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     mqttClient.on('message', (topic, payload) => {
       const message = payload.toString();
-      setState((prev) => ({ ...prev, lastUpdate: new Date() }));
 
       switch (topic) {
         case 'smarthome/suhu':
-          setState((prev) => ({ ...prev, temperature: parseFloat(message) }));
-          addLog(`Suhu diupdate: ${message}°C`);
+          setState((prev) => ({ ...prev, temperature: parseFloat(message), lastUpdate: new Date() }));
           break;
         case 'smarthome/kelembaban':
-          setState((prev) => ({ ...prev, humidity: parseFloat(message) }));
-          addLog(`Kelembaban diupdate: ${message}%`);
+          setState((prev) => ({ ...prev, humidity: parseFloat(message), lastUpdate: new Date() }));
           break;
         case 'smarthome/lampu1':
         case 'smarthome/lampu2':
         case 'smarthome/lampu3':
         case 'smarthome/lampu4':
           const lampKey = topic.split('/')[1] as keyof AppState['relays'];
-          setState((prev) => ({
-            ...prev,
-            relays: { ...prev.relays, [lampKey]: message as RelayStatus },
-          }));
-          addLog(`Status ${lampKey} menjadi ${message}`);
+          setState((prev) => {
+            if (prev.relays[lampKey] !== message) {
+              const newLog: LogEntry = {
+                id: Math.random().toString(36).substr(2, 9),
+                message: `Status ${lampKey} menjadi ${message}`,
+                timestamp: new Date(),
+              };
+              logsRef.current = [newLog, ...logsRef.current].slice(0, 50);
+              return {
+                ...prev,
+                relays: { ...prev.relays, [lampKey]: message as RelayStatus },
+                logs: logsRef.current,
+                lastUpdate: new Date(),
+              };
+            }
+            return { ...prev, lastUpdate: new Date() };
+          });
           break;
         case 'smarthome/variasi':
-          setState((prev) => ({ ...prev, variation: message as any }));
-          addLog(message === 'STOP' ? 'Variasi stopped' : `${message} Activated`);
+          setState((prev) => {
+            if (prev.variation !== message) {
+              const newLog: LogEntry = {
+                id: Math.random().toString(36).substr(2, 9),
+                message: message === 'STOP' ? 'Variasi stopped' : `${message} Activated`,
+                timestamp: new Date(),
+              };
+              logsRef.current = [newLog, ...logsRef.current].slice(0, 50);
+              return {
+                ...prev,
+                variation: message as any,
+                logs: logsRef.current,
+                lastUpdate: new Date(),
+              };
+            }
+            return { ...prev, lastUpdate: new Date() };
+          });
           break;
         case 'smarthome/status':
-          // Assuming payload is JSON for status, but fallback to simple string
           try {
             const parsedStatus = JSON.parse(message);
             setState((prev) => ({
               ...prev,
               status: { ...prev.status, ...parsedStatus },
+              lastUpdate: new Date(),
             }));
-            addLog('Status device diperbarui');
           } catch (e) {
             const upperMsg = message.toUpperCase();
-            if (upperMsg === 'ONLINE' || upperMsg === 'CONNECTED') {
-              setState((prev) => ({ ...prev, status: { ...prev.status, esp32Online: true } }));
-            } else if (upperMsg === 'OFFLINE' || upperMsg === 'DISCONNECTED') {
-              setState((prev) => ({ ...prev, status: { ...prev.status, esp32Online: false } }));
-            }
-            // we ignore other malformed payloads gracefully instead of erroring out
+            setState((prev) => {
+              if (upperMsg === 'ONLINE' || upperMsg === 'CONNECTED') {
+                return { ...prev, status: { ...prev.status, esp32Online: true }, lastUpdate: new Date() };
+              } else if (upperMsg === 'OFFLINE' || upperMsg === 'DISCONNECTED') {
+                return { ...prev, status: { ...prev.status, esp32Online: false }, lastUpdate: new Date() };
+              }
+              return { ...prev, lastUpdate: new Date() };
+            });
           }
           break;
         default:
